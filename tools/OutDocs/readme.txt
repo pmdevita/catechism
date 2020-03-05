@@ -1,1 +1,1 @@
-This folder is needed to out the markdown version of the epub
+This folder is needed to output the markdown version of the epub files
