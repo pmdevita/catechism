@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return send_from_directory('../frontend', filename="index.html")
+    return send_from_directory('../www/dist', filename="index.html")
 
 
 @app.route('/dist/<path:path>')
