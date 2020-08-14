@@ -1,8 +1,9 @@
-import { render, Component } from 'preact';
+import { render, Component, Fragment } from 'preact';
+import Reader from "./views/Reader";
 
 class App extends Component {
   render(props, state, context) {
-    return <h1>Hello There</h1>
+    return <Reader><span>test child</span></Reader>
   }
 }
 
