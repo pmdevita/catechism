@@ -3,7 +3,7 @@ import Reader from "./views/Reader";
 
 class App extends Component {
   render(props, state, context) {
-    return <Reader><span>test child</span></Reader>
+    return <Reader/>
   }
 }
 

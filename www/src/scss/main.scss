@@ -1,3 +1,15 @@
-body {
+$sans-font-stack:  Roboto, Arial, "Helvetica Neue", Helvetica, sans-serif;
+$serif-font-stack: Merriweather, "Times New Roman", Times, serif;
+$font-color: black;
 
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: $sans-font-stack;
+    color: $font-color;
+}
+
+h1, h3 {
+    font-family: $serif-font-stack;
+    color: $font-color;
 }
