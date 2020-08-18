@@ -6,9 +6,9 @@ from bs4 import BeautifulSoup
 #Prints mardown to .json files
 
 
-def _init_():
-    tableOfContetns = []
-    listOfContetns = list()
+def main():
+    table_of_contents = []
+    list_of_contents = list()
     i = 0
 
     #Open the Epub and extracts it to folder
@@ -24,15 +24,15 @@ def _init_():
 
     #Reads in the order of pages
     for link in soup.find_all('itemref'):
-        tableOfContetns.append(link.get('idref'))
+        table_of_contents.append(link.get('idref'))
 
     #Saes the order of the pages
-    for x in tableOfContetns:
+    for x in table_of_contents:
         temp = soup.find(id=x)
-        listOfContetns.append(temp.get('href'))
+        list_of_contents.append(temp.get('href'))
 
-    #Iterates through the page file names and converts only the relevant pages
-    for x in listOfContetns:
+    #Iterates through the page file names and converts only the relevant pages into markdown
+    for x in list_of_contents:
         if 2 <= i <= 39:
 
             #Converts the file name into output file location
@@ -44,63 +44,69 @@ def _init_():
             outfile = currFile
             out = open(outfile, "w", encoding="utf-8")
 
+            #Opens the current page and reads each line in it
             with open("CatEpub/"+x, encoding="utf8") as f:
                 file = f.readlines()
                 for y in file:
-                    CurrSoup = BeautifulSoup(y, "lxml")
-                    if CurrSoup.body:
+                    
+                    #Turn current line into beautiful soup
+                    currSoup = BeautifulSoup(y, "lxml")
+                    
+                    #Check if current line is part of the body of the page
+                    if currSoup.body:
                         temp = ""
-                        ChapCont = list(CurrSoup.strings)
-                        if len(ChapCont) >= 0 and ChapCont[0] != "\n":
-                            if CurrSoup.h1:
-                                ChapCont = CurrSoup.h1.contents
+                        
+                        chapCont = list(currSoup.strings)
+                        if len(chapCont) >= 0 and chapCont[0] != "\n":
+                            if currSoup.h1:
+                                chapCont = currSoup.h1.contents
 
                                 temp = temp + "#"
-                                for z in ChapCont:
+                                for z in chapCont:
                                     temp = temp + stringify(z, 1)
                                 temp = temp + "\n"
-                            elif CurrSoup.h2:
-                                ChapCont = CurrSoup.h2.contents
+                            elif currSoup.h2:
+                                chapCont = currSoup.h2.contents
 
                                 temp = temp + "##"
-                                for z in ChapCont:
+                                for z in chapCont:
                                     temp = temp + stringify(z, 2)
                                 temp = temp + "\n"
-                            elif CurrSoup.find("p", class_="footnote"):
-                                ChapCont = CurrSoup.find("p", class_="footnote").contents
+                            elif currSoup.find("p", class_="footnote"):
+                                chapCont = currSoup.find("p", class_="footnote").contents
 
-                                for z in ChapCont:
-                                    if str(ChapCont[1]) == '<sup class="frac">*</sup>':
-                                        if z == ChapCont[0]: temp = ""
-                                    elif z == ChapCont[0]:
+                                for z in chapCont:
+                                    if str(chapCont[1]) == '<sup class="frac">*</sup>':
+                                        if z == chapCont[0]: temp = ""
+                                    elif z == chapCont[0]:
                                         temp = temp + "[^" + stringify(z.contents[0], 0) + "]: "
                                     elif z.string:
                                         temp = temp + stringify(z, 0)
                                 temp = temp + "\n"
-                            elif CurrSoup.find(class_="lines_float"):
-                                ChapCont = CurrSoup.find(class_="lines_float").contents
+                            elif currSoup.find(class_="lines_float"):
+                                chapCont = currSoup.find(class_="lines_float").contents
 
                                 temp = temp + "^"
-                                for z in ChapCont:
+                                for z in chapCont:
                                     temp = temp + stringify(z, 0)
                                 temp = temp + "\n"
-                            elif CurrSoup.find(class_="event01"):
-                                ChapCont = CurrSoup.find(class_="event01").contents
+                            elif currSoup.find(class_="event01"):
+                                chapCont = currSoup.find(class_="event01").contents
 
                                 temp = temp + "<"
-                                for z in ChapCont:
+                                for z in chapCont:
                                     temp = temp + stringify(z, 0)
                                 temp = temp + "\n"
-                            elif CurrSoup.find(class_="event1"):
-                                ChapCont = CurrSoup.find(class_="event1").contents
+                            elif currSoup.find(class_="event1"):
+                                chapCont = currSoup.find(class_="event1").contents
 
-                                for z in ChapCont:
+                                for z in chapCont:
                                     temp = temp + stringify(z, 0)
                                 temp = temp + "\n"
                             else:
-                                ChapCont = CurrSoup.contents[0].contents[0].contents
+                                chapCont = currSoup.contents[0].contents[0].contents
 
-                                for z in ChapCont:
+                                for z in chapCont:
                                     temp = temp + stringify(z, 0)
                                 temp = temp + "\n"
 
@@ -164,6 +170,5 @@ def stringify(x, i):
         return stringify(x.contents[0], i)
 
 
-_init_()
-print("Finished!")
-
+if __name__ == "__main__":
+    main()
