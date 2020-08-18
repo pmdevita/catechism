@@ -1,5 +1,3 @@
-import epub_reader
-
 from flask import Flask, send_from_directory, jsonify
 
 app = Flask(__name__)
