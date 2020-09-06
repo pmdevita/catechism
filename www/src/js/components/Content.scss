@@ -1,3 +1,13 @@
-.Content {
+@use '../../scss/main';
 
+$max-width: 960px;
+
+.Content {
+    overflow: scroll;
+    height: 100%;
+    margin: auto;
+    max-width: $max-width;
+    padding: main.$huge-padding;
+    font-family: main.$serif-font-stack;
+    line-height: 28px;
 }

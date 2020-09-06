@@ -1,5 +1,6 @@
 import { Component } from "preact";
 import styles from "./TOC.scss"
+import TOCRow from './TOCRow';
 
 class TOC extends Component {
     constructor() {
@@ -24,23 +25,21 @@ class TOC extends Component {
                 {"title": "Part 4: Christian Prayer", "verse": 1500, "sections": []}
             ]
         };
+
+        this.draw = this.draw.bind(this);
     }
 
-    getContent() {
-        return this.traverse(this.state.toc);
-    }
-
-    traverse(item) {
-        const listItems = item.map(item =>
-            <li>{item.title}{this.traverse(item.sections)}</li>
+    draw() {
+        let index = 0;
+        return this.state.toc.map(item =>
+            <TOCRow title={item.title} verse={item.verse} sections={item.sections} indexPath={[index]}/>
         );
-        return <ul>{listItems}</ul>
     }
 
     render(props, state, context) {
         return <div class={styles.TOC}>
-            <h1>Table of Contents</h1>
-            {this.getContent()}
+            <h3>Table of Contents</h3>
+            {this.draw()}
         </div>;
     }
 }
