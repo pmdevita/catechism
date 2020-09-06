@@ -1,3 +1,16 @@
+@use '../../scss/main';
+
 .TOC {
-    padding: 16px;
+    overflow: scroll;
+    height: 100%;
+    max-width: 375px;
+    min-width: 260px;
+    border-right: main.$border;
+    background-color: main.$background-color;
+}
+
+.TOC > h3 {
+    margin: 0;
+    padding: main.$normal-padding;
+    padding-top: main.$huge-padding;
 }
