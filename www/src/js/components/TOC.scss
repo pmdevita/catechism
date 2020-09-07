@@ -1,10 +1,12 @@
 @use '../../scss/main';
 
+$sidebar-width: 320px;
+
 .TOC {
     overflow: scroll;
     height: 100%;
-    max-width: 375px;
-    min-width: 260px;
+    max-width: $sidebar-width;
+    min-width: $sidebar-width;
     border-right: main.$border;
     background-color: main.$background-color;
 }
