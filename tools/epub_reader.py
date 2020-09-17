@@ -128,6 +128,7 @@ def main():
                                     chap_cont = curr_soup.find(class_="event1").contents
 
                                     if i == -1: print(chap_cont)
+                                    main_dict["text"] = main_dict["text"] + ">"
                                     add_text(chap_cont)
 
                                 elif curr_soup.find(class_="event_indent"):
@@ -135,6 +136,14 @@ def main():
 
                                     if i == -1: print(chap_cont)
                                     add_text(chap_cont)
+
+                                elif curr_soup.find(class_="hanging0"):
+                                    chap_cont = curr_soup.find(class_="hanging0").contents
+
+                                    if i == -1: print(chap_cont)
+                                    main_dict["text"] = main_dict["text"]+"^"
+                                    add_text(chap_cont)
+                                    main_dict["text"] = main_dict["text"]+"^    \n"
 
                                 elif curr_soup.find(class_="lines_float"):
                                     main_dict["cross-references"].append(curr_soup.find(class_="lines_float").contents[0].string)
@@ -149,8 +158,8 @@ def main():
                                     if "id" in curr_soup.find(class_="eventsection").attrs:
                                         curr_section = curr_soup.find(class_="eventsection")['id']
 
-                                #else:
-                                    #print("Prevet" + curr_soup)
+                                else:
+                                    print("Prevet: "+ str(i)+" - " + str(curr_soup))
                             last_soup = curr_soup
 
             create_main_dict(print_main_dict(out_main))
@@ -333,6 +342,17 @@ def stringify(x, i):
             for y in x.contents:
                 temp = "[" + stringify(y, i) + "](" + temp + ")"
             return temp
+    elif str(x) == "<br/>":
+        if i == 0:
+            return "    \n"
+        else:
+            j = 0
+            temp = ""
+
+            while j != i:
+                temp = temp + "#"
+                j += 1
+            return "    \n" + temp
     elif len(x.contents) != 1:
         temp = ""
 
