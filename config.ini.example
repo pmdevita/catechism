@@ -1,0 +1,3 @@
+[general]
+mode = development
+webpack_host = http://localhost:9000/

@@ -27,8 +27,9 @@ npm run prod # modes listed in package.json
 
 ### Back-end
 
+Create config.ini in root directory (see config.ini.example)
+
 ```shell
-cd backend
 virtualenv venv
 # or
 python3 -m virtualenv venv
@@ -36,7 +37,12 @@ venv\Scripts\activate.bat
 # or
 source venv/bin/activate
 pip install -r requirements.txt
+flask run backend/app.py
 ```
+
+## Hot reload mode
+
+Run `npm dev-server` and set mode to `development` in config.ini for running with hot reload enabled
 
 ## Roadmap
 
