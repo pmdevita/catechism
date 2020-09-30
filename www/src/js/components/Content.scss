@@ -1,0 +1,17 @@
+@use '../../scss/main';
+
+$max-width: 680px;
+
+.Content {
+    overflow: scroll;
+    height: 100%;
+    width: 100%;
+    padding: main.$huge-padding;
+}
+
+.Text {
+    margin: auto;
+    max-width: $max-width;
+    font-family: main.$serif-font-stack;
+    line-height: 28px;
+}

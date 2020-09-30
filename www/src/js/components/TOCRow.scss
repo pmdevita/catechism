@@ -1,0 +1,22 @@
+@use '../../scss/main';
+
+.Row {
+    display: flex;
+    width: 100%;
+    border-bottom: main.$border;
+}
+
+.ExpandButton {
+    flex-shrink: 0;
+    width: 44px;
+    border: none;
+    background-color: transparent;
+}
+
+.Link {
+    width: 100%;
+    padding: main.$normal-padding;
+    padding-left: 0;
+    text-decoration: none;
+    color: main.$font-color;
+}

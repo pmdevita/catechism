@@ -1,0 +1,26 @@
+$sans-font-stack:  Roboto, Arial, "Helvetica Neue", Helvetica, sans-serif;
+$serif-font-stack: Merriweather, "Times New Roman", Times, serif;
+$font-color: black;
+
+$tiny-padding: 4px;
+$small-padding: 8px;
+$normal-padding: 16px;
+$large-padding: 32px;
+$huge-padding: 64px;
+
+$border: 1px solid rgba(0,0,0,.08);
+
+$background-color: rgba(0,0,0,.04);
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-size: 17px;
+    font-family: $sans-font-stack;
+    color: $font-color;
+}
+
+h1, h3 {
+    font-family: $serif-font-stack;
+    color: $font-color;
+}

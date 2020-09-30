@@ -1,0 +1,18 @@
+@use '../../scss/main';
+
+$sidebar-width: 320px;
+
+.TOC {
+    overflow: scroll;
+    height: 100%;
+    max-width: $sidebar-width;
+    min-width: $sidebar-width;
+    border-right: main.$border;
+    background-color: main.$background-color;
+}
+
+.TOC > h3 {
+    margin: 0;
+    padding: main.$normal-padding;
+    padding-top: main.$huge-padding;
+}
