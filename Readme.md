@@ -44,6 +44,10 @@ flask run backend/app.py
 
 Run `npm dev-server` and set mode to `development` in config.ini for running with hot reload enabled
 
+## Preact debugging
+
+[Download here](https://github.com/preactjs/preact-devtools)
+
 ## Roadmap
 
 [See Issue #1](https://github.com/pmdevita/catechism/issues/1)

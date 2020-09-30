@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const babel = require("./babel.config");
 
 module.exports = {
   entry: ['./src/js/main.js', './src/scss/main.scss'],
@@ -13,7 +14,11 @@ module.exports = {
       {
         test: /\.js$/,
         enforce: 'pre',
-        use: ['babel-loader', 'source-map-loader'],
+        use: [{
+          loader: 'babel-loader',
+          options: babel
+        },
+          'source-map-loader'],
       },
       {
         test: /\.html$/,
