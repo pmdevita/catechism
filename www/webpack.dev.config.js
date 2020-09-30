@@ -11,7 +11,7 @@ thing['devServer'] = {
     port: 9000,
     contentBase: path.join(__dirname, 'dist'),
 };
-thing.module.rules[0].use[0].options.plugins.splice(0, 0, "@prefresh/babel-plugin"); // Add @prefresh/babel-plugin to Babel
+thing.module.rules[0].use.options.plugins.splice(0, 0, "@prefresh/babel-plugin"); // Add @prefresh/babel-plugin to Babel
 thing.module.rules[2].use.splice(0,1,"style-loader");   // Replace MiniCSS with style-loader
 
 module.exports = thing;
