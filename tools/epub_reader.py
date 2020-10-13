@@ -18,7 +18,11 @@ main_dict = {
 }
 
 toc_dict = {
-
+    "title": "",
+    "page": "",
+    "sections": [],
+    "tabs": 1,
+    "name": ""
 }
 
 def main():
@@ -80,6 +84,7 @@ def main():
                     #Turn current line into beautiful soup
                     curr_soup = BeautifulSoup(y, "lxml")
 
+                    if y == "</tr>\n": main_dict["text"] = main_dict["text"] + "|    "
                     
                     #Check if current line is part of the body of the page
                     if curr_soup.body:
@@ -143,7 +148,25 @@ def main():
                                     if i == -1: print(chap_cont)
                                     main_dict["text"] = main_dict["text"]+"^"
                                     add_text(chap_cont)
-                                    main_dict["text"] = main_dict["text"]+"^    \n"
+                                    main_dict["text"] = main_dict["text"]+"^    "
+
+                                elif curr_soup.find(class_="section_article1"):
+                                    chap_cont = curr_soup.find(class_="section_article1").contents
+
+                                    if i == -1: print(chap_cont)
+                                    main_dict["text"] = main_dict["text"] + "|-|"
+                                    add_text(chap_cont)
+                                    main_dict["text"] = main_dict["text"] + "|-| "
+
+                                elif curr_soup.td:
+                                    chap_cont = curr_soup.td.contents
+
+                                    if i == -1:
+                                        print(str(curr_soup.td))
+
+                                    main_dict["text"] = main_dict["text"] + "| "
+                                    add_text(chap_cont)
+                                    main_dict["text"] = main_dict["text"] + " "
 
                                 elif curr_soup.find(class_="lines_float"):
                                     main_dict["cross-references"].append(curr_soup.find(class_="lines_float").contents[0].string)
@@ -158,13 +181,21 @@ def main():
                                     if "id" in curr_soup.find(class_="eventsection").attrs:
                                         curr_section = curr_soup.find(class_="eventsection")['id']
 
-                                else:
-                                    print("Prevet: "+ str(i)+" - " + str(curr_soup))
                             last_soup = curr_soup
 
             create_main_dict(print_main_dict(out_main))
             out_main.close()
             out_footnote.close()
+        elif i == 3:
+
+            out_toc = open("OutDocs/toc.json", "w", encoding="utf-8")
+
+            out_toc.write("[\n")
+            read_toc(x, out_toc)
+            out_toc.write("]")
+
+            out_toc.close()
+
         i = i + 1
 
         global page_number
@@ -290,6 +321,145 @@ def check_if_invalid_text(string, list_of_str):
         return False
 
 
+def read_toc(infile, outfile):
+
+    tab_order = {"PROLOGUE": 0, "PART": 0, "SECTION": 1, "CHAPTER": 2, "ARTICLE": 3, "Paragraph": 4, "other": 5}
+    dict_list = []
+
+    with open("CatEpub/" + infile, encoding="utf8") as f:
+        file = f.readlines()
+
+        for y in file:
+            curr_soup = BeautifulSoup(y, "lxml")
+
+            if curr_soup.body:
+
+                chap_cont = list(curr_soup.strings)
+
+                if len(chap_cont) >= 0 and chap_cont[0] != "\n":
+                    if curr_soup.find(class_="toc_chap") or curr_soup.find(class_="toc_sec1") or \
+                            curr_soup.find(class_="toc_hang") or curr_soup.find(class_="toc_sec4") or \
+                            curr_soup.find(class_="toc_part1"):
+                        string_title = ""
+                        temp_title = ""
+
+                        for j in curr_soup.a.contents:
+                            string_title = string_title + j.string
+
+                        for j in curr_soup.a.contents:
+                            temp_title = temp_title + stringify(j, 0)
+
+                        temp_page = curr_soup.a.attrs["href"]
+                        temp_page = temp_page.replace("Chur_9780307953704_epub_", '')
+                        temp_page = temp_page.replace("_r1.htm", '')
+
+                        if string_title == "PROLOGUE":
+
+                            toc_dict["page"] = str(temp_page)
+
+                            toc_dict["title"] = stringify(curr_soup.a.contents[0], 0)
+
+                            toc_dict["name"] = string_title
+                            dict_list.append(toc_dict)
+                        elif string_title.find("PART") == 0:
+                            clear_toc(outfile)
+                            dict_list = []
+
+                            toc_dict["page"] = str(temp_page)
+
+                            toc_dict["title"] = stringify(curr_soup.a.contents[0], 0)
+
+                            toc_dict["name"] = "PART"
+                            dict_list.append(toc_dict)
+                        else:
+
+                            if string_title.find("SECTION") == 0:
+                                curr_name = "SECTION"
+                            elif string_title.find("CHAPTER") == 0:
+                                curr_name = "CHAPTER"
+                            elif string_title.find("ARTICLE") == 0:
+                                curr_name = "ARTICLE"
+                            elif string_title.find("Paragraph") == 0:
+                                curr_name = "Paragraph"
+                            else:
+                                curr_name = "other"
+
+                            if tab_order.get(curr_name) > tab_order.get(dict_list[-1]["name"]):
+                                curr_toc = create_toc_dict(dict_list[-1]["tabs"] + 1)
+                                dict_list[-1]["sections"].append(curr_toc)
+                                dict_list.append(curr_toc)
+                            elif tab_order.get(curr_name) < tab_order.get(dict_list[-1]["name"]):
+                                while tab_order.get(curr_name) <= tab_order.get(dict_list[-1]["name"]):
+                                    dict_list.pop()
+
+                                curr_toc = create_toc_dict(dict_list[-1]["tabs"] + 1)
+                                dict_list[-1]["sections"].append(curr_toc)
+                                dict_list.append(curr_toc)
+                            else:
+                                curr_toc = create_toc_dict(dict_list[-1]["tabs"])
+                                if len(dict_list) >= 2: dict_list[-2]["sections"].append(curr_toc)
+                                else: toc_dict["sections"].append(curr_toc)
+
+                            temp_page = temp_page[temp_page.find('#'):]
+                            temp_page = temp_page.replace("#", '')
+
+                            curr_toc["page"] = str(temp_page)
+
+                            curr_toc["title"] = temp_title
+
+                            curr_toc["name"] = curr_name
+
+    clear_toc(outfile)
+
+
+def clear_toc(out):
+
+    print_toc(toc_dict, out)
+
+    toc_dict["title"] = ""
+    toc_dict["page"] = ""
+    if toc_dict["sections"]:
+        toc_dict["sections"].clear()
+    toc_dict["tabs"]: 1
+
+    return toc_dict
+
+
+def print_toc(old_dict, out):
+
+    for x in range(old_dict["tabs"]):
+        out.write("\t")
+    out.write('{"title": "' + old_dict["title"]+'"')
+    out.write(', "page": "' + old_dict["page"]+'"')
+    out.write(', "sections": [')
+    if old_dict["sections"]:
+        out.write("\n")
+        for x in old_dict["sections"]:
+            print_toc(x, out)
+        if old_dict["tabs"] >= 1:
+            for x in range(old_dict["tabs"]):
+                out.write("\t")
+        out.write("    ]},\n")
+    else:
+        if old_dict["tabs"] <= 1:
+            for x in range(old_dict["tabs"]+1):
+                out.write("\t")
+        out.write("]},\n")
+
+
+def create_toc_dict(tabs):
+
+    temp_dict = {
+        "title": "",
+        "page": "",
+        "sections": [],
+        "tabs": tabs,
+        "name": ""
+    }
+
+    return temp_dict
+
+
 def stringify(x, i):
     curr = ""
 
@@ -344,7 +514,7 @@ def stringify(x, i):
             return temp
     elif str(x) == "<br/>":
         if i == 0:
-            return "    \n"
+            return "    "
         else:
             j = 0
             temp = ""
@@ -352,7 +522,7 @@ def stringify(x, i):
             while j != i:
                 temp = temp + "#"
                 j += 1
-            return "    \n" + temp
+            return "    " + temp
     elif len(x.contents) != 1:
         temp = ""
 
