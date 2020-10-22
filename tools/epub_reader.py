@@ -55,16 +55,21 @@ def main():
 
     #Iterates through the page file names and converts only the relevant pages into markdown
     for x in list_of_contents:
+        global page_number
         if 5 <= i <= 35:
 
             #Converts the file name into output file location
             main_text = x
             main_text = main_text.replace("OEBPS", 'OutDocs')
             main_text = main_text.replace(".htm", '.json')
+            main_text = main_text.replace("Chur_9780307953704_epub_", '')
+            main_text = main_text.replace("_r1", '')
 
             footnote_text = x
             footnote_text = footnote_text.replace("OEBPS", 'Footnotes')
             footnote_text = footnote_text.replace(".htm", '.json')
+            footnote_text = footnote_text.replace("Chur_9780307953704_epub_", '')
+            footnote_text = footnote_text.replace("_r1", '')
 
             #Creates the current output file
             main_file = main_text
@@ -88,13 +93,11 @@ def main():
                     
                     #Check if current line is part of the body of the page
                     if curr_soup.body:
-                        temp = ""
-                        
+
                         chap_cont = list(curr_soup.strings)
 
                         if len(chap_cont) >= 0 and chap_cont[0] != "\n":
-                            #format_main(curr_soup.find("p", class_="footnote").contents, out_footnote)
-                            if 3 <= i <= 38 and curr_soup.find("p", class_="footnote"):
+                            if 5 <= i <= 38 and curr_soup.find("p", class_="footnote"):
                                 format_footnote(curr_soup.find("p", class_="footnote").contents, out_footnote)
                             else:
                                 if curr_soup.find(class_="event"):
@@ -113,8 +116,6 @@ def main():
                                     else:
                                         main_dict["before"] = curr_section
 
-                                    if i == -1: print(chap_cont)
-
                                     add_text(chap_cont)
 
                                 elif curr_soup.find(class_="event01"):
@@ -126,26 +127,22 @@ def main():
                                     else:
                                         main_dict["before"] = curr_section
 
-                                    if i == -1: print(chap_cont)
                                     add_text(chap_cont)
 
                                 elif curr_soup.find(class_="event1"):
                                     chap_cont = curr_soup.find(class_="event1").contents
 
-                                    if i == -1: print(chap_cont)
                                     main_dict["text"] = main_dict["text"] + ">"
                                     add_text(chap_cont)
 
                                 elif curr_soup.find(class_="event_indent"):
                                     chap_cont = curr_soup.find(class_="event_indent").contents
 
-                                    if i == -1: print(chap_cont)
                                     add_text(chap_cont)
 
                                 elif curr_soup.find(class_="hanging0"):
                                     chap_cont = curr_soup.find(class_="hanging0").contents
 
-                                    if i == -1: print(chap_cont)
                                     main_dict["text"] = main_dict["text"]+"^"
                                     add_text(chap_cont)
                                     main_dict["text"] = main_dict["text"]+"^    "
@@ -153,16 +150,12 @@ def main():
                                 elif curr_soup.find(class_="section_article1"):
                                     chap_cont = curr_soup.find(class_="section_article1").contents
 
-                                    if i == -1: print(chap_cont)
                                     main_dict["text"] = main_dict["text"] + "|-|"
                                     add_text(chap_cont)
                                     main_dict["text"] = main_dict["text"] + "|-| "
 
                                 elif curr_soup.td:
                                     chap_cont = curr_soup.td.contents
-
-                                    if i == -1:
-                                        print(str(curr_soup.td))
 
                                     main_dict["text"] = main_dict["text"] + "| "
                                     add_text(chap_cont)
@@ -195,10 +188,150 @@ def main():
             out_toc.write("]")
 
             out_toc.close()
+        elif 36 <= i <= 38:
+
+            main_text = x
+            main_text = main_text.replace("OEBPS", 'OutDocs')
+            main_text = main_text.replace(".htm", '.json')
+            main_text = main_text.replace("Chur_9780307953704_epub_", '')
+            main_text = main_text.replace("_r1", '')
+
+            main_file = main_text
+            out_main = open(main_file, "w", encoding="utf-8")
+
+            with open("CatEpub/" + x, encoding="utf8") as f:
+                file = f.readlines()
+
+                out_main.write('{\n')
+
+                for y in file:
+                    curr_soup = BeautifulSoup(y, "lxml")
+
+                    if curr_soup.body:
+
+                        chap_cont = list(curr_soup.strings)
+
+                        if len(chap_cont) >= 0 and chap_cont[0] != "\n":
+                            if curr_soup.h1:
+                                out_main.write('\ttext: "#'+stringify(curr_soup.h1, 1)+'"\n')
+                            elif curr_soup.find(class_="nonindent"):
+                                out_main.write('\ttext: "##'+stringify(curr_soup.find(class_="nonindent"), 1)+'"\n')
+                            elif curr_soup.find(class_="nonindent2"):
+                                out_main.write('\ttext: "' + stringify(curr_soup.find(class_="nonindent2"), 1) + '"\n')
+                            elif curr_soup.find(class_="primary"):
+                                out_main.write('\ttext: "   ' + stringify(curr_soup.find(class_="primary"), 1) + '"\n')
+                            elif curr_soup.find(class_="secondary"):
+                                out_main.write('\ttext: "      ' + stringify(curr_soup.find(class_="secondary"), 1) + '"\n')
+                            elif curr_soup.find(class_="tertiary"):
+                                out_main.write('\ttext: "         ' + stringify(curr_soup.find(class_="tertiary"), 1) + '"\n')
+                            else:
+                                for z in chap_cont:
+                                    out_main.write("\t"+z)
+                                print(curr_soup.contents[0].contents[0].contents[0])
+
+            out_main.write("}")
+            out_main.close()
+        elif 39 == i:
+
+            main_text = x
+            main_text = main_text.replace("OEBPS", 'OutDocs')
+            main_text = main_text.replace(".htm", '.json')
+            main_text = main_text.replace("Chur_9780307953704_epub_", '')
+            main_text = main_text.replace("_r1", '')
+
+            main_file = main_text
+            out_main = open(main_file, "w", encoding="utf-8")
+
+            with open("CatEpub/" + x, encoding="utf8") as f:
+                file = f.readlines()
+
+                out_main.write('{\n')
+
+                for y in file:
+                    curr_soup = BeautifulSoup(y, "lxml")
+
+                    if y == "</tr>\n": out_main.write("|    ")
+
+                    if curr_soup.body:
+
+                        chap_cont = list(curr_soup.strings)
+
+                        if len(chap_cont) >= 0 and chap_cont[0] != "\n":
+                            if curr_soup.h1:
+                                out_main.write('\ttext: "#'+stringify(curr_soup.h1, 0)+'"\n')
+                            elif curr_soup.find(class_="nonindent2"):
+                                out_main.write('\ttext: "' + stringify(curr_soup.find(class_="nonindent2"), 0) + '"\n')
+                                out_main.write('\ttext: "')
+                            elif curr_soup.td:
+                                out_main.write('   ' + stringify(curr_soup.td, 0))
+                                if chap_cont[0] == "Revelation":
+                                    out_main.write('"\n')
+                                elif "</tr>" in y:
+                                    out_main.write('"\n\ttext: "')
+
+            out_main.write("}")
+            out_main.close()
+        elif 4 == i:
+            main_text = x
+            main_text = main_text.replace("OEBPS", 'OutDocs')
+            main_text = main_text.replace(".htm", '.json')
+            main_text = main_text.replace("Chur_9780307953704_epub_", '')
+            main_text = main_text.replace("_r1", '')
+
+            footnote_text = x
+            footnote_text = footnote_text.replace("OEBPS", 'Footnotes')
+            footnote_text = footnote_text.replace(".htm", '.json')
+            footnote_text = footnote_text.replace("Chur_9780307953704_epub_", '')
+            footnote_text = footnote_text.replace("_r1", '')
+
+            main_file = main_text
+            out_main = open(main_file, "w", encoding="utf-8")
+
+            footnote_file = footnote_text
+            out_footnote = open(footnote_file, "w", encoding="utf-8")
+
+            with open("CatEpub/" + x, encoding="utf8") as f:
+                file = f.readlines()
+
+                out_main.write('{\n')
+
+                intro_dict = main_dict.copy()
+                intro_dict["number"] = 0
+                print(intro_dict)
+
+                for y in file:
+                    curr_soup = BeautifulSoup(y, "lxml")
+
+                    if curr_soup.body:
+                        chap_cont = list(curr_soup.strings)
+
+                        if len(chap_cont) >= 0 and chap_cont[0] != "\n":
+                            if curr_soup.h1:
+                                out_main.write('\ttext: "#'+stringify(curr_soup.h1, 0)+'"\n')
+                            elif curr_soup.find(class_="nonindent0"):
+                                out_main.write(
+                                    '\ttext: "##' + stringify(curr_soup.find(class_="nonindent0"), 0) + '"\n')
+                            elif curr_soup.find(class_="center0"):
+                                out_main.write(
+                                    '\ttext: "<center>' + stringify(curr_soup.find(class_="center0"), 0) + '</center>"\n')
+                            elif curr_soup.find(class_="indent0"):
+                                out_main.write(
+                                    '\ttext: "   ' + stringify(curr_soup.find(class_="indent0"), 0) + '"\n')
+                            elif curr_soup.find(class_="section0"):
+                                out_main.write(
+                                    '\ttext: "###' + stringify(curr_soup.find(class_="section0"), 0) + '"\n')
+                            elif curr_soup.find(class_="footnote"):
+                                format_footnote(curr_soup.find("p", class_="footnote").contents, out_footnote)
+                            else:
+                                for z in chap_cont:
+                                    out_main.write("\t" + z)
+                                print(curr_soup.contents[0].contents[0].contents[0])
+
+            out_main.write("}")
+            out_main.close()
 
         i = i + 1
 
-        global page_number
         page_number = i
 
 
@@ -467,8 +600,6 @@ def stringify(x, i):
         for y in x:
             curr = curr + str(y)
 
-    if page_number == -1: print(x)
-
     if x.string == x:
         return str(x)
     elif str(x) == '<span class="small">' + curr + '</span>':
@@ -489,6 +620,12 @@ def stringify(x, i):
         for y in x.contents:
             temp = temp + stringify(y, i)
         return temp + "**"
+    elif str(x) == '<span class="underline">' + curr + '</span>':
+        temp = "++"
+
+        for y in x.contents:
+            temp = temp + stringify(y, i)
+        return temp + "++"
     elif str(x) == '<sup class="frac">' + curr + '</sup>':
         temp = ""
 
@@ -503,6 +640,10 @@ def stringify(x, i):
             if x.contents and x.contents[0].name == "sup":
                 for y in x.contents:
                     temp = "["+stringify(y, i) + "](" + x.contents[0].contents[0] + ")"
+                return temp
+            elif i == 1:
+                for y in x.contents:
+                    temp = "[" + stringify(y, i) + "](" + temp + ")"
                 return temp
             else: return "{"+temp+"}"
         elif "href" in x.attrs:
