@@ -5,8 +5,9 @@ const MarkdownRegEx = {
     header: new RegExp("^#+ "),
     list: new RegExp("^([\*|\\-|\+]) "),
     orderedList: new RegExp("^(\\d+)\. "),
-    blank: new RegExp("^\s*$"),
-    indent: new RegExp("^( +)\\S")
+    indent: new RegExp("^( +)\\S"),
+    horizRule: new RegExp("^\\s*(-{3,})\\s*$"),
+    quote: new RegExp("^(\\s*>).*$")
 };
 
 const MarkdownConsts = {
@@ -15,13 +16,19 @@ const MarkdownConsts = {
     PARAGRAPH: "PARAGRAPH",
     CODE: "CODE",
     ORDERED_LIST: "ORDERED_LIST",
-    BLANK: "BLANK"
+    BREAK: "BREAK",
+    HORIZONTAL_RULE: "HORIZONTAL_RULE",
+    QUOTE: "QUOTE"
 };
 
-const LEVEL_TYPES = new Set([MarkdownConsts.LIST, MarkdownConsts.ORDERED_LIST]);
+const LEVEL_TYPES = new Set([MarkdownConsts.LIST, MarkdownConsts.ORDERED_LIST, MarkdownConsts.QUOTE]);
 
 function Header(props) {
     return h("h" + props.level.toString(), null, props.text);
+}
+
+function Text(props) {
+    
 }
 
 function List(props) {
@@ -35,17 +42,30 @@ function List(props) {
 }
 
 function Paragraph(props) {
-    return <p>{props.list.join(">join<")}</p>
+    return <p>{props.list.join(" ")}</p>;
+}
+
+function Quote(props) {
+    return <blockquote><p>{props.list.join(" ")}</p></blockquote>;
 }
 
 function Code(props) {
-    return <code>{props.list.join("\n")}</code>
+    return <code>{props.list.join("\n")}</code>;
+}
+
+function Break(props) {
+    return <br/>;
+}
+
+function HorizontalRule(props) {
+    return <hr/>
 }
 
 
 class GroupManager {
     constructor() {
         this.groupStack = [];
+        this.staged = null;
     }
 
     add(type, value, data) {
@@ -53,7 +73,10 @@ class GroupManager {
     }
 
     doAdd() {
-        // If type matches, add on to current group
+        if (this.staged === null) {
+            return;
+        }
+        // If type matches, check if we can add it on to the last type's stack
         if (this.groupStack.length > 0) {
             if (this.groupStack[this.groupStack.length - 1].type === this.staged.type) {
                 if (LEVEL_TYPES.has(this.staged.type)) {
@@ -104,6 +127,7 @@ class Markdown extends Component {
 
     processGroup(final, group) {
         // Process merging
+        // Pre-processing for lists. Flatten hierarchy into a single list component
         for (let i = group.length() - 1; i >= 1; i--) {
             switch (group.groupStack[i].type) {
                 case MarkdownConsts.LIST:
@@ -124,7 +148,8 @@ class Markdown extends Component {
                     }
             }
         }
-        for (let i = group.length() - 1; i >= 1; i--) { // Now merge the flattened lists
+        // Now merge neighboring list components
+        for (let i = group.length() - 1; i >= 1; i--) {
             switch (group.groupStack[i].type) {
                 case MarkdownConsts.LIST:
                 case MarkdownConsts.ORDERED_LIST: // List merging
@@ -144,6 +169,7 @@ class Markdown extends Component {
             }
         }
         // Merged, remove groups
+        // Normal processing for all other components
         // Don't remove last group
         while (group.length() > 0) {
             let finishedGroup = group.groupStack.splice(0, 1)[0];
@@ -159,6 +185,9 @@ class Markdown extends Component {
                 case MarkdownConsts.CODE:
                     final.push(<Code list={finishedGroup.list}/>);
                     break;
+                case MarkdownConsts.QUOTE:
+                    final.push(<Quote list={finishedGroup.list}/>);
+                    break;
             }
         }
     }
@@ -167,21 +196,33 @@ class Markdown extends Component {
         // console.log("hello", markdownString);
         let lines = markdownString.split("\n");
         let final = [];
-        let group = new GroupManager();
+        let group = new GroupManager(); // We group related lines together, like lists or paragraphs
         let type = null;
         let result = null;
         let indent = 0;
+        // let lastLineBreak = false; // If the last line was a break, then if types match we have to force them apart
         let line;
         for (let i=0; i<lines.length; i++) {
-            line = lines[i];
+            line = lines[i]; // Don't trim, we need indent on left and potentially, continue line >  < on right
             type = null;
             result = null;
             indent = 0;
+            // Determine type of line and indent
             // Parse line starter
+            if (line.trim() === "") {
+                type = MarkdownConsts.BREAK;
+            }
+            // What level indent are we at?
             let results = MarkdownRegEx.indent.exec(line);
             if (results) {
                 indent = Math.floor(results[1].length / 4);
                 line = line.substring(results[1].length);
+            }
+            results = MarkdownRegEx.quote.exec(line);
+            if (results && indent === 0) {
+                console.log("matched quote", results, line);
+                type = MarkdownConsts.QUOTE;
+                group.add(MarkdownConsts.QUOTE, line.slice(results[1].length), {})
             }
             results = MarkdownRegEx.header.exec(line);
             if (results && indent === 0) {
@@ -199,10 +240,13 @@ class Markdown extends Component {
                 type = MarkdownConsts.ORDERED_LIST;
                 group.add(MarkdownConsts.ORDERED_LIST, line.slice(results[0].length), {'level': indent, 'start': parseInt(results[1])});
             }
-            results = MarkdownRegEx.blank.exec(line);
+            results = MarkdownRegEx.horizRule.exec(line);
             if (results) {
-                continue; // For now, paragraphs will need to know if there are two
+                type = MarkdownConsts.HORIZONTAL_RULE;
+                result = <HorizontalRule/>;
             }
+            // Final processing to decide how to add it to the stack
+            // If type is null, it indicates there was no special modifier for line type, making it a paragraph or a code block if indented
             if (type == null) {
                 if (indent === 0) {
                     type = MarkdownConsts.PARAGRAPH;
@@ -212,7 +256,9 @@ class Markdown extends Component {
                     group.add(MarkdownConsts.CODE, line)
                 }
             }
-            if (group.isNotLastType(type)) {
+            // If this line isn't to join the current group, complete it
+            // If this line was a line break, make the group completed
+            if (group.isNotLastType(type) || type === MarkdownConsts.BREAK) {
                 this.processGroup(final, group);
             }
             if (result != null) {
