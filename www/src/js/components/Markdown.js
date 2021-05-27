@@ -1,4 +1,4 @@
-import { Component } from "preact";
+import { Component, Fragment } from "preact";
 import markdownTest from "../test/markdownTest";
 
 const MarkdownRegEx = {
@@ -7,7 +7,10 @@ const MarkdownRegEx = {
     orderedList: new RegExp("^(\\d+)\. "),
     indent: new RegExp("^( +)\\S"),
     horizRule: new RegExp("^\\s*(-{3,})\\s*$"),
-    quote: new RegExp("^(\\s*>).*$")
+    quote: new RegExp("^(\\s*>).*$"),
+    link: new RegExp("\\[(.*?)\\] *\\n? *\\(\\s*(.*?)\\s*\\)", "g"),
+    emphasis: new RegExp("(\\*|_)(.*?)(\\*|_)", "g"),
+    strongEmphasis: new RegExp("(\\*\\*|__)(.*?)(\\*\\*|__)", "g")
 };
 
 const MarkdownConsts = {
@@ -24,11 +27,49 @@ const MarkdownConsts = {
 const LEVEL_TYPES = new Set([MarkdownConsts.LIST, MarkdownConsts.ORDERED_LIST, MarkdownConsts.QUOTE]);
 
 function Header(props) {
-    return h("h" + props.level.toString(), null, props.text);
+    return h("h" + props.level.toString(), null, <Text>{props.children}</Text>);
+}
+
+function Link(props) {
+    // Nesting Text is correct probably not great for performance
+    return <a href={props.address}><Text>{props.children}</Text></a>;
+}
+
+function Emphasis(props) {
+    return h(this.props.strong ? "strong" : "em", {}, <Text>{props.children}</Text>);
+}
+
+function replaceTextMarkup(list, regex, func) {
+    // Go backwards to avoid index offset problems
+    for (let i=list.length - 1;i>=0;i--) {
+        if (typeof list[i] != 'string') {
+            continue;
+        }
+        let replacements = [];
+        for (const match of list[i].matchAll(regex)) {
+            let replacement = func(match);
+            replacements.push({"replacement": replacement, start: match.index, end: match.index + match[0].length});
+        }
+        for (const replacement of replacements.reverse()) {
+            list.splice(i, 1, list[i].substr(0, replacement.start), replacement.replacement, list[i].substr(replacement.end));
+        }
+    }
+    return list;
 }
 
 function Text(props) {
-    
+    let text = [props.children.trim()];
+    text = replaceTextMarkup(text, MarkdownRegEx.link, (match) => {
+        return <Link address={match[2]}>{match[1]}</Link>;
+    })
+    text = replaceTextMarkup(text, MarkdownRegEx.strongEmphasis, (match) => {
+        return <Emphasis strong={true}>{match[2]}</Emphasis>;
+    })
+    text = replaceTextMarkup(text, MarkdownRegEx.emphasis, (match) => {
+        console.log("hi", match);
+        return <Emphasis>{match[2]}</Emphasis>;
+    })
+    return <>{text}</>
 }
 
 function List(props) {
@@ -36,13 +77,13 @@ function List(props) {
         if (typeof data === 'object') {
             return <List ordered={data.ordered} list={data.list}/>;
         } else {
-            return <li>{data}</li>;
+            return <li><Text>{data}</Text></li>;
         }
     }))
 }
 
 function Paragraph(props) {
-    return <p>{props.list.join(" ")}</p>;
+    return <p><Text>{props.list.join(" ")}</Text></p>;
 }
 
 function Quote(props) {
@@ -227,7 +268,7 @@ class Markdown extends Component {
             results = MarkdownRegEx.header.exec(line);
             if (results && indent === 0) {
                 type = MarkdownConsts.HEADER;
-                result = <Header level={results[0].length - 1} text={line.slice(results[0].length)}/>;
+                result = <Header level={results[0].length - 1}>{line.slice(results[0].length)}</Header>;
             }
             results = MarkdownRegEx.list.exec(line);
             if (results) {
@@ -279,7 +320,7 @@ class Markdown extends Component {
         return (
             <div>
                 {this.processMarkdown(markdownTest)}
-                {/*{this.processMarkdown("* asdf\n* asdf\n* asdf\n    * fasda\n    * fdsa\n* 1234\n* 1234\nasdfasdfasdf")}*/}
+                {/*{this.processMarkdown("**Note:** This document is itself written using Markdown; you\n can [see the source for it by adding '.text' to the URL](/projects/markdown/syntax.text).\n")}*/}
             </div>
         );
     }
