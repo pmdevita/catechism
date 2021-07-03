@@ -4,7 +4,7 @@
   "description": "",
   "main": "postcss.config.js",
   "scripts": {
-    "dev-server": "webpack-dev-server --watch --mode development --config webpack.dev.config.js",
+    "dev-server": "webpack serve --mode development --config webpack.dev.config.js",
     "dev": "webpack --watch --mode development",
     "prod": "webpack --mode production"
   },
