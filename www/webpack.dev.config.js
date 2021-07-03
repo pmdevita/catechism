@@ -13,7 +13,6 @@ module.exports = (env, options) => {
     thing.plugins.splice(0, 1); // Remove Clean Webpack plugin
     thing.plugins.push(new webpack.HotModuleReplacementPlugin());
     thing.plugins.push(new PreactRefreshPlugin());
-    thing.module.rules[2].use.splice(0, 1, "style-loader");   // Replace MiniCSS with style-loader
 
     return thing;
 }
