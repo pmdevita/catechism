@@ -318,7 +318,7 @@ class Markdown extends Component {
 
     render() {
         return (
-            <div>
+            <div className={"prose"}>
                 {this.processMarkdown(markdownTest)}
                 {/*{this.processMarkdown("**Note:** This document is itself written using Markdown; you\n can [see the source for it by adding '.text' to the URL](/projects/markdown/syntax.text).\n")}*/}
             </div>

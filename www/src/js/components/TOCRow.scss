@@ -1,9 +1,9 @@
-@use '../../scss/main';
+//@use '../../scss/main';
 
 .Row {
     display: flex;
     width: 100%;
-    border-bottom: main.$border;
+    //border-bottom: main.$border;
 }
 
 .ExpandButton {
@@ -15,8 +15,8 @@
 
 .Link {
     width: 100%;
-    padding: main.$normal-padding;
+    //padding: main.$normal-padding;
     padding-left: 0;
     text-decoration: none;
-    color: main.$font-color;
+    //color: main.$font-color;
 }
