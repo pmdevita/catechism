@@ -2,61 +2,107 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const babel = require("./babel.config");
+const TerserPlugin = require("terser-webpack-plugin");
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
-module.exports = {
-  entry: ['./src/js/main.js', './src/scss/main.scss'],
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.m?js$/,
-        exclude: /(node_modules|bower_components)/,
-        use: {
-          loader: 'babel-loader',
-          options: babel
-        }
-      },
-      {
-        test: /\.html$/,
-        use: [{
-          loader: "html-loader",
-          options: {
+module.exports = (env, options) => {
+  const isDevelopment = options.mode !== 'production';
+  return {
+    entry: {
+      js: './src/js/main.js',
+      css: './src/scss/main.scss'
+    },
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: '[name].[contenthash].js',
+      publicPath: "",
+      assetModuleFilename: "images/[name].[hash][ext][query]"
+    },
+    module: {
+      rules: [
+        {
+          test: /\.m?js$/,
+          exclude: /(node_modules|bower_components)/,
+          use: {
+            loader: 'babel-loader',
+            options: babel
           }
-        }]
-      },
-      {
-        test: /\.scss$/,
-        use: [
-          MiniCssExtractPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: {
-              modules: {
-                localIdentName: '[path][name]__[local]'
+        },
+        {
+          test: /\.html$/,
+          use: [{
+            loader: "html-loader",
+            options: {}
+          }]
+        },
+        {
+          test: /\.scss$/,
+          use: [
+            isDevelopment ? 'style-loader' : MiniCssExtractPlugin.loader,
+            {
+              loader: 'css-loader',
+              options: {
+                modules: {
+                  localIdentName: '[path][name]__[local]'
+                }
               }
-            }
-          },
-          "postcss-loader?sourceMap",
-          "resolve-url-loader?sourceMap",
-          "sass-loader?sourceMap"
-        ]
+            },
+            {
+              loader: "postcss-loader",
+              options: {
+                sourceMap: true
+              }
+            },
+            "resolve-url-loader?sourceMap",
+            "sass-loader?sourceMap"
+          ]
 
+        },
+        {
+          test: /\.(png|jpe?g|gif|bmp|woff2?)$/i,
+          type: "asset/resource"
+        },
+      ]
+    },
+    devtool: 'source-map',
+    plugins: [
+      new CleanWebpackPlugin(),
+      new HtmlWebpackPlugin({
+        template: path.resolve(__dirname, 'src/index.html'),
+        filename: 'index.html'
+      }),
+      new MiniCssExtractPlugin({
+        filename: "[name].[contenthash].css"
+      })
+    ],
+    optimization: {
+      minimize: !isDevelopment,
+      minimizer: [
+        new TerserPlugin(),
+        new CssMinimizerPlugin(),
+      ],
+      splitChunks: {
+        cacheGroups: {
+          commons: {
+            test: /[\\/]node_modules[\\/](?!lazysizes)/,
+            name: 'vendor',
+            chunks: 'all',
+          },
+        },
       },
-      {
-        test: /\.(png|jpe?g|gif|bmp|woff2?)$/i,
-        use: ['file-loader'],
-      },
-    ]
-  },
-  devtool: 'source-map',
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, 'src/index.html'),
-      filename: 'index.html'
-    }),
-    new MiniCssExtractPlugin()
-  ]
-};
+    },
+    devServer: {
+      contentBase: path.join(__dirname, 'dist'),
+      host: '0.0.0.0',
+      port: 9000,
+      historyApiFallback: true,
+      hot: true,
+      inline: true,
+      publicPath: '',
+      clientLogLevel: 'none',
+      open: false,
+      overlay: true,
+    }
+  }
+}
