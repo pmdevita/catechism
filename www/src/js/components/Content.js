@@ -4,7 +4,7 @@ import Markdown from "./Markdown";
 
 class Content extends Component {
     render(props, state, context) {
-        return <div class={"overflow-scroll h-full w-full"}>
+        return <div class={"overflow-auto h-full"}>
             <div class={"m-auto"}>
                 <Markdown/>
             </div>
