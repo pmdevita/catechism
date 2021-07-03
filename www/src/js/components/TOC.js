@@ -1,5 +1,4 @@
 import { Component } from "preact";
-import styles from "./TOC.scss"
 import TOCRow from './TOCRow';
 
 class TOC extends Component {
@@ -37,8 +36,8 @@ class TOC extends Component {
     }
 
     render(props, state, context) {
-        return <div class={styles.TOC}>
-            <h3>Table of Contents</h3>
+        return <div class="overflow-scroll h-full w-80 bg-gray-50 border-r border-gray-100 ">
+            <h3 class="m-0 p-4 pt-16">Table of Contents</h3>
             {this.draw()}
         </div>;
     }
