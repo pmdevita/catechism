@@ -11,7 +11,8 @@ module.exports = (env, options) => {
   return {
     entry: {
       js: './src/js/main.js',
-      css: './src/scss/main.scss'
+      css: './src/scss/main.scss',
+      tw: './src/scss/tailwind.scss'
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -40,6 +41,7 @@ module.exports = (env, options) => {
         },
         {
           test: /\.scss$/,
+          exclude: /tailwind.scss$/,
           use: [
             isDevelopment ? 'style-loader' : MiniCssExtractPlugin.loader,
             {
@@ -50,6 +52,22 @@ module.exports = (env, options) => {
                 }
               }
             },
+            {
+              loader: "postcss-loader",
+              options: {
+                sourceMap: true
+              }
+            },
+            "resolve-url-loader?sourceMap",
+            "sass-loader?sourceMap"
+          ]
+
+        },
+        {
+          test: /tailwind.scss$/,
+          use: [
+            isDevelopment ? 'style-loader' : MiniCssExtractPlugin.loader,
+            'css-loader',
             {
               loader: "postcss-loader",
               options: {
