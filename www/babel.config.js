@@ -1,27 +1,35 @@
-module.exports = {
-  "presets": [
-    [
-      "@babel/env",
-      {
-        "targets": {
-          "firefox": "75",
-          "chrome": "79",
-          "safari": "13",
-        },
-        "useBuiltIns": "usage",
-        "corejs": "3.6.5",
-      }
-    ]
-  ],
-  "plugins": [
-    ["@babel/plugin-transform-react-jsx", {
-      "pragma": "h",
-      "pragmaFrag": "Fragment"
-    }],
-    ["babel-plugin-jsx-pragmatic", {
-      "module": "preact",
-      "import": "h",
-      "export": "h"
-    }]
-  ]
+module.exports = (api, options, dirname) => {
+  api.cache.using(() => process.env.NODE_ENV)
+  const isHot = process.env.HOT_RELOAD === 'true';
+  const config = {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "firefox": "79",
+            "chrome": "80",
+            "safari": "13",
+          }
+        }
+      ]
+    ],
+    "plugins":
+        [
+          ["@babel/plugin-transform-react-jsx", {
+            "pragma": "h",
+            "pragmaFrag": "Fragment"
+          }],
+          ["babel-plugin-jsx-pragmatic", {
+            "module": "preact",
+            "import": "h",
+            "export": "h"
+          }],
+          "@babel/plugin-proposal-class-properties"
+        ]
+  }
+  if (isHot) {
+    config['plugins'].splice(0, 0, '@prefresh/babel-plugin');
+  }
+  return config;
 }

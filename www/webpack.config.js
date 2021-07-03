@@ -22,12 +22,14 @@ module.exports = (env, options) => {
     module: {
       rules: [
         {
-          test: /\.m?js$/,
-          exclude: /(node_modules|bower_components)/,
-          use: {
-            loader: 'babel-loader',
-            options: babel
-          }
+          test: /\.jsx?$/,
+          // resolve: {
+          //   fullySpecified: false
+          // },
+          use: [
+            'babel-loader',
+            // 'source-map-loader'
+          ],
         },
         {
           test: /\.html$/,
