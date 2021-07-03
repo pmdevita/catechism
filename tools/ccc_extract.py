@@ -90,15 +90,8 @@ def extract(file):
         for page in page_order[start_page_index:]:
             with zip.open(page_index[page], 'r') as f:
                 soup = BeautifulSoup(f, 'lxml')
-                # Skip to beginning
-                # if not start:
-                #     if search_string in soup.get_text():
-                #         start = True
-                #     else:
-                #         continue
-                # print(soup)
 
-                # Process every tag in the html body
+                # Process the pre-body tags in a page
                 for child in soup.body.children:
                     # print(child)
                     if isinstance(child, NavigableString):
@@ -121,6 +114,7 @@ def extract(file):
                 if not soup.body.find('div', class_="outline"):
                     continue
 
+                # Process the main content section in the page
                 for child in soup.body.find('div', class_='outline'):
                     # print(child)
                     if isinstance(child, NavigableString):
@@ -128,9 +122,14 @@ def extract(file):
 
                     print(child.name, child.get('class', None))
 
+                    # The following are parse rules for the different tags that occur in the text
+
                     # Large (biggest) header
                     if child.name == 'h1' and 'chapter' in child.get('class', []) and INCLUDE_HEADERS:
                         new_verse += "# {}\n".format(child.get_text())
+                    # IN BRIEF header
+                    elif child.name == 'h2' and 'section' in child.get('class', []) and INCLUDE_HEADERS:
+                        new_verse += "### {}\n".format(child.get_text())
                     # Text without verse
                     elif child.name == 'div' and 'event1' in child.get('class', []):
                         # if length is only one,
@@ -140,6 +139,11 @@ def extract(file):
                                 new = child.span
                                 template = ">{}\n"
                                 append = True
+                            # Normal
+                            else:
+                                template = "{}\n"
+                                new = child
+                                append = False
                         # Normal
                         else:
                             template = "{}\n"
@@ -161,6 +165,17 @@ def extract(file):
                         new_verse += "#### {}\n".format(process_text(child, child))
                     # Verse
                     elif child.name == 'div' and 'event' in child.get('class', []):
+                        # If this verse lacks a number and follows a cross-reference, we'll append it
+                        append = child.contents[0].name != 'strong' and lines_float
+                        new = process_text(child, child, verse=True, footnotes=False)
+                        if append:
+                            verses[len(verses) - 1] += " {}\n".format(new)
+                        else:
+                            new_verse += "{}\n".format(new)
+                            verses.append(new_verse)
+                            new_verse = ""
+                    # IN BRIEF verses
+                    elif child.name == 'div' and 'event01' in child.get('class', []):
                         # If this verse lacks a number and follows a cross-reference, we'll append it
                         append = child.contents[0].name != 'strong' and lines_float
                         new = process_text(child, child, verse=True, footnotes=False)
