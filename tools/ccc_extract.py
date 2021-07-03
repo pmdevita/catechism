@@ -104,90 +104,8 @@ def extract(file):
                         new_verse += "# {}\n".format(child.get_text())
                     elif child.name == 'h2' and 'section' in child.get('class', []) and INCLUDE_HEADERS:
                         new_verse += "## {}\n".format(child.get_text())
-
-                # Flag used to indicate the previous tag was a cross reference and that this a continuation of the last verse
-                lines_float = False
-                if soup.body.find('div', class_='outline') is None:
-                    print("hey")
-
-                # Some pages only have footnotes, go figure
-                if not soup.body.find('div', class_="outline"):
-                    continue
-
-                # Process the main content section in the page
-                for child in soup.body.find('div', class_='outline'):
-                    # print(child)
-                    if isinstance(child, NavigableString):
-                        continue
-
-                    print(child.name, child.get('class', None))
-
-                    # The following are parse rules for the different tags that occur in the text
-
-                    # Large (biggest) header
-                    if child.name == 'h1' and 'chapter' in child.get('class', []) and INCLUDE_HEADERS:
-                        new_verse += "# {}\n".format(child.get_text())
-                    # IN BRIEF header
-                    elif child.name == 'h2' and 'section' in child.get('class', []) and INCLUDE_HEADERS:
-                        new_verse += "### {}\n".format(child.get_text())
-                    # Text without verse
-                    elif child.name == 'div' and 'event1' in child.get('class', []):
-                        # if length is only one,
-                        if len(child.contents) == 1:
-                            # Quote
-                            if child.contents[0].name == 'span' and 'small' in child.contents[0].get('class', []):
-                                new = child.span
-                                template = ">{}\n"
-                                append = True
-                            # Normal
-                            else:
-                                template = "{}\n"
-                                new = child
-                                append = False
-                        # Normal
-                        else:
-                            template = "{}\n"
-                            new = child
-                            append = False
-
-                        # print(child)
-                        text = process_text(new, child)
-                        print(text)
-                        if append:
-                            verses[len(verses) - 1] += template.format(text)
-                        else:
-                            new_verse += template.format(text)
-                    # Subsection header
-                    elif child.name == 'div' and 'eventsection' in child.get('class', []) and INCLUDE_HEADERS:
-                        new_verse += "### {}\n".format(process_text(child, child))
-                    # Sub-subsection header
-                    elif child.name == 'div' and 'eventsection0' in child.get('class', []) and INCLUDE_HEADERS:
-                        new_verse += "#### {}\n".format(process_text(child, child))
-                    # Verse
-                    elif child.name == 'div' and 'event' in child.get('class', []):
-                        # If this verse lacks a number and follows a cross-reference, we'll append it
-                        append = child.contents[0].name != 'strong' and lines_float
-                        new = process_text(child, child, verse=True, footnotes=False)
-                        if append:
-                            verses[len(verses) - 1] += " {}\n".format(new)
-                        else:
-                            new_verse += "{}\n".format(new)
-                            verses.append(new_verse)
-                            new_verse = ""
-                    # IN BRIEF verses
-                    elif child.name == 'div' and 'event01' in child.get('class', []):
-                        # If this verse lacks a number and follows a cross-reference, we'll append it
-                        append = child.contents[0].name != 'strong' and lines_float
-                        new = process_text(child, child, verse=True, footnotes=False)
-                        if append:
-                            verses[len(verses) - 1] += " {}\n".format(new)
-                        else:
-                            new_verse += "{}\n".format(new)
-                            verses.append(new_verse)
-                            new_verse = ""
-                    # Cross-reference
-                    elif child.name == 'div' and 'lines_float' in child.get('class', []):
-                        lines_float = True
+                    elif child.name == 'div' and 'outline' in child.get('class', []):
+                        new_verse = parse_outline_section(child, verses, new_verse)
 
         # pprint(verses)
         # for i in verses:
@@ -195,6 +113,89 @@ def extract(file):
         # verses = []
         with open("output.md", "w") as f:
             f.write("\n".join(verses))
+
+
+def parse_outline_section(outline, verses, new_verse):
+    # Process the main content section in the page
+
+    # Flag used to indicate the previous tag was a cross reference and that this a continuation of the last verse
+    lines_float = False
+
+    for child in outline:
+        # print(child)
+        if isinstance(child, NavigableString):
+            continue
+
+        print(child.name, child.get('class', None))
+
+        # The following are parse rules for the different tags that occur in the text
+
+        # Large (biggest) header
+        if child.name == 'h1' and 'chapter' in child.get('class', []) and INCLUDE_HEADERS:
+            new_verse += "# {}\n".format(child.get_text())
+        # IN BRIEF header
+        elif child.name == 'h2' and 'section' in child.get('class', []) and INCLUDE_HEADERS:
+            new_verse += "### {}\n".format(child.get_text())
+        # Text without verse
+        elif child.name == 'div' and 'event1' in child.get('class', []):
+            # if length is only one,
+            if len(child.contents) == 1:
+                # Quote
+                if child.contents[0].name == 'span' and 'small' in child.contents[0].get('class', []):
+                    new = child.span
+                    template = ">{}\n"
+                    append = True
+                # Normal
+                else:
+                    template = "{}\n"
+                    new = child
+                    append = False
+            # Normal
+            else:
+                template = "{}\n"
+                new = child
+                append = False
+
+            # print(child)
+            text = process_text(new, child)
+            print(text)
+            if append:
+                verses[len(verses) - 1] += template.format(text)
+            else:
+                new_verse += template.format(text)
+        # Subsection header
+        elif child.name == 'div' and 'eventsection' in child.get('class', []) and INCLUDE_HEADERS:
+            new_verse += "### {}\n".format(process_text(child, child))
+        # Sub-subsection header
+        elif child.name == 'div' and 'eventsection0' in child.get('class', []) and INCLUDE_HEADERS:
+            new_verse += "#### {}\n".format(process_text(child, child))
+        # Verse
+        elif child.name == 'div' and 'event' in child.get('class', []):
+            # If this verse lacks a number and follows a cross-reference, we'll append it
+            append = child.contents[0].name != 'strong' and lines_float
+            new = process_text(child, child, verse=True, footnotes=False)
+            if append:
+                verses[len(verses) - 1] += " {}\n".format(new)
+            else:
+                new_verse += "{}\n".format(new)
+                verses.append(new_verse)
+                new_verse = ""
+        # IN BRIEF verses
+        elif child.name == 'div' and 'event01' in child.get('class', []):
+            # If this verse lacks a number and follows a cross-reference, we'll append it
+            append = child.contents[0].name != 'strong' and lines_float
+            new = process_text(child, child, verse=True, footnotes=False)
+            if append:
+                verses[len(verses) - 1] += " {}\n".format(new)
+            else:
+                new_verse += "{}\n".format(new)
+                verses.append(new_verse)
+                new_verse = ""
+        # Cross-reference
+        elif child.name == 'div' and 'lines_float' in child.get('class', []):
+            lines_float = True
+
+    return new_verse
 
 if __name__ == '__main__':
     args = argparse.parse_args()
