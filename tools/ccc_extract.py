@@ -141,9 +141,11 @@ def parse_outline_section(outline, verses, new_verse):
         # Text without verse
         elif child.name == 'div' and 'event1' in child.get('class', []):
             # if length is only one,
+            is_quote = False
             if len(child.contents) == 1:
                 # Quote
                 if child.contents[0].name == 'span' and 'small' in child.contents[0].get('class', []):
+                    is_quote = True
                     new = child.span
                     template = ">{}\n"
                     # If the last addition was also a quote, separate it by character turn
@@ -155,19 +157,26 @@ def parse_outline_section(outline, verses, new_verse):
                                     and last_type[len(last_type) - 2] == "quote":
                                 template = ">\n>{}\n"
                     append = True
+                    # One quote appeared after a header, go figure
+                    if last_type:
+                        append = last_type[len(last_type) - 1] != "header"
                     last_type.append("quote")
-                # Normal
-                else:
-                    template = "{}\n"
-                    new = child
-                    append = False
-                    last_type.append("text")
-            # Normal
-            else:
+            # New text paragraph
+            if not is_quote:
                 template = "{}\n"
-                new = child
                 append = False
-                last_type.append("text")
+                # Double check for quote broken by cross reference
+                if len(last_type) > 1:
+                    if last_type[len(last_type) - 1] == "cross reference" \
+                            and last_type[len(last_type) - 2] == "quote":
+                        template = ">{}\n"
+                        append = True
+                        last_type.append("quote")
+                    else:
+                        last_type.append("text")
+                else:
+                    last_type.append("text")
+                new = child
 
             # print(child)
             text = process_text(new, child)
@@ -178,11 +187,11 @@ def parse_outline_section(outline, verses, new_verse):
                 new_verse += template.format(text)
         # Subsection header
         elif child.name == 'div' and 'eventsection' in child.get('class', []) and INCLUDE_HEADERS:
-            new_verse += "### {}\n".format(process_text(child, child))
+            new_verse += "#### {}\n".format(process_text(child, child))
             last_type.append("header")
         # Sub-subsection header
         elif child.name == 'div' and 'eventsection0' in child.get('class', []) and INCLUDE_HEADERS:
-            new_verse += "#### {}\n".format(process_text(child, child))
+            new_verse += "##### {}\n".format(process_text(child, child))
             last_type.append("header")
         # Verse
         elif child.name == 'div' and 'event' in child.get('class', []):
@@ -215,6 +224,10 @@ def parse_outline_section(outline, verses, new_verse):
         # Cross-reference
         elif child.name == 'div' and 'lines_float' in child.get('class', []):
             last_type.append("cross reference")
+        # Paragraph headers
+        elif child.name == 'div' and 'event_big' in child.get('class', []):
+            new_verse += "### {}\n".format(process_text(child, child))
+            last_type.append("header")
 
         if len(last_type) > 5:
             last_type.pop(0)
