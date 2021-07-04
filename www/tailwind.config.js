@@ -9,10 +9,15 @@ module.exports = {
   darkMode: false, // or 'media' or 'class'
   theme: {
     fontFamily: {
-      sans: ["Roboto", "Arial", "Helvetica Neue", "Helvetica", ...defaultTheme.fontFamily.sans],
-      display: ["Merriweather", "Times New Roman", "Times", ...defaultTheme.fontFamily.sans]
+      sans: ['Roboto', ...defaultTheme.fontFamily.sans],
+      serif: ['Merriweather', ...defaultTheme.fontFamily.serif]
     },
-    extend: {},
+    extend: {
+      backgroundOpacity: {
+          '2': '0.02', 
+          '4': '0.04' 
+      }
+    },
   },
   variants: {
     extend: {},

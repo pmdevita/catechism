@@ -5,7 +5,7 @@ import Content from '../components/Content';
 
 class Reader extends Component {
     render(props, state, context) {
-        return <div class="flex h-full">
+        return <div class="flex h-full text-gray-900">
             <TOC/>
             <Content/>
         </div>;

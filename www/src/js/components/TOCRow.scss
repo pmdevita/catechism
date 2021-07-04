@@ -1,22 +1,7 @@
-//@use '../../scss/main';
-
-.Row {
-    display: flex;
-    width: 100%;
-    //border-bottom: main.$border;
-}
-
 .ExpandButton {
-    flex-shrink: 0;
-    width: 44px;
-    border: none;
-    background-color: transparent;
+    @apply flex flex-shrink-0 h-10 w-10 mx-1 justify-center items-center rounded-md cursor-pointer hover:bg-black hover:bg-opacity-5;
 }
 
-.Link {
-    width: 100%;
-    //padding: main.$normal-padding;
-    padding-left: 0;
-    text-decoration: none;
-    //color: main.$font-color;
+.NoButton {
+    @apply flex-shrink-0 h-10 w-10 mx-1;
 }
