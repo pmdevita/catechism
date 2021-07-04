@@ -119,7 +119,7 @@ def parse_outline_section(outline, verses, new_verse):
     # Process the main content section in the page
 
     # Flag used to indicate the previous tag was a cross reference and that this a continuation of the last verse
-    lines_float = False
+    last_type = []
 
     for child in outline:
         # print(child)
@@ -133,9 +133,11 @@ def parse_outline_section(outline, verses, new_verse):
         # Large (biggest) header
         if child.name == 'h1' and 'chapter' in child.get('class', []) and INCLUDE_HEADERS:
             new_verse += "# {}\n".format(child.get_text())
+            last_type.append("header")
         # IN BRIEF header
         elif child.name == 'h2' and 'section' in child.get('class', []) and INCLUDE_HEADERS:
             new_verse += "### {}\n".format(child.get_text())
+            last_type.append("header")
         # Text without verse
         elif child.name == 'div' and 'event1' in child.get('class', []):
             # if length is only one,
@@ -144,17 +146,28 @@ def parse_outline_section(outline, verses, new_verse):
                 if child.contents[0].name == 'span' and 'small' in child.contents[0].get('class', []):
                     new = child.span
                     template = ">{}\n"
+                    # If the last addition was also a quote, separate it by character turn
+                    if len(last_type) > 0:
+                        if last_type[len(last_type) - 1] == "quote":
+                            template = ">\n>{}\n"
+                        elif len(last_type) > 1:
+                            if last_type[len(last_type) - 1] == "cross reference" \
+                                    and last_type[len(last_type) - 2] == "quote":
+                                template = ">\n>{}\n"
                     append = True
+                    last_type.append("quote")
                 # Normal
                 else:
                     template = "{}\n"
                     new = child
                     append = False
+                    last_type.append("text")
             # Normal
             else:
                 template = "{}\n"
                 new = child
                 append = False
+                last_type.append("text")
 
             # print(child)
             text = process_text(new, child)
@@ -166,24 +179,31 @@ def parse_outline_section(outline, verses, new_verse):
         # Subsection header
         elif child.name == 'div' and 'eventsection' in child.get('class', []) and INCLUDE_HEADERS:
             new_verse += "### {}\n".format(process_text(child, child))
+            last_type.append("header")
         # Sub-subsection header
         elif child.name == 'div' and 'eventsection0' in child.get('class', []) and INCLUDE_HEADERS:
             new_verse += "#### {}\n".format(process_text(child, child))
+            last_type.append("header")
         # Verse
         elif child.name == 'div' and 'event' in child.get('class', []):
             # If this verse lacks a number and follows a cross-reference, we'll append it
-            append = child.contents[0].name != 'strong' and lines_float
+            append = child.contents[0].name != 'strong' and last_type[len(last_type) - 1] == "cross reference"
             new = process_text(child, child, verse=True, footnotes=False)
             if append:
                 verses[len(verses) - 1] += " {}\n".format(new)
             else:
-                new_verse += "{}\n".format(new)
+                # A single sentence that is strong might be a header
+                if child.contents[0].name == 'strong' and len(child.contents) == 1:
+                    new_verse += "#### {}\n".format(new)
+                else:
+                    new_verse += "{}\n".format(new)
+                    last_type.append("verse")
                 verses.append(new_verse)
                 new_verse = ""
         # IN BRIEF verses
         elif child.name == 'div' and 'event01' in child.get('class', []):
             # If this verse lacks a number and follows a cross-reference, we'll append it
-            append = child.contents[0].name != 'strong' and lines_float
+            append = child.contents[0].name != 'strong' and last_type[len(last_type) - 1] == "cross reference"
             new = process_text(child, child, verse=True, footnotes=False)
             if append:
                 verses[len(verses) - 1] += " {}\n".format(new)
@@ -191,9 +211,13 @@ def parse_outline_section(outline, verses, new_verse):
                 new_verse += "{}\n".format(new)
                 verses.append(new_verse)
                 new_verse = ""
+            last_type.append("verse")
         # Cross-reference
         elif child.name == 'div' and 'lines_float' in child.get('class', []):
-            lines_float = True
+            last_type.append("cross reference")
+
+        if len(last_type) > 5:
+            last_type.pop(0)
 
     return new_verse
 
