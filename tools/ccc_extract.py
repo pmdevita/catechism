@@ -1,13 +1,12 @@
 from zipfile import ZipFile
 from argparse import ArgumentParser
 from pprint import pprint
+import json
 import re
 from bs4 import BeautifulSoup, NavigableString
 
 argparse = ArgumentParser()
 argparse.add_argument("epub")
-
-file = "catechism.epub"
 
 INCLUDE_HEADERS = True
 
@@ -16,10 +15,16 @@ page_order = []
 
 
 # Regex to remove weird spaces
-spaces_regex = re.compile("(\s{4,})")
+# 3rd case is for removing the colon in verse 2821
+spaces_regex = re.compile("(\s{4,}|  |:\xa0\xa0\xa0)")
+spaces_test = re.compile("(:\xa0\xa0\xa0)")
+ellipsis = re.compile("( … )")
+ellipsis_end = re.compile("( …)")
+ellipsis_start = re.compile("(… )")
+nbsp = re.compile("( )")
 
 
-def process_text(tag, child, verse=False, footnotes=False):
+def process_text(tag, verse=False, footnotes=False):
     """
 
     :param tag: BS4 tag to process text from
@@ -29,11 +34,11 @@ def process_text(tag, child, verse=False, footnotes=False):
     """
     # Process verse number and remove extra spaces
     if verse:
-        if child.contents[0].name == 'strong':
-            if child.contents[0].string is None:
+        if tag.contents[0].name == 'strong':
+            if tag.contents[0].string is None:
                 print("hi")
-                del child.contents[0].contents[0]  # Sometimes there is an extra tag in here besides the navigable string
-            child.contents[0].string = child.contents[0].string + "."
+                del tag.contents[0].contents[0]  # Sometimes there is an extra tag in here besides the navigable string
+            tag.contents[0].string = tag.contents[0].string + "."
 
     # Strip footnotes
     if not footnotes:
@@ -44,21 +49,30 @@ def process_text(tag, child, verse=False, footnotes=False):
             except ValueError:
                 pass
 
+    # Quote usually
+    if len(tag.contents) == 1:
+        if not isinstance(tag.contents[0], NavigableString):
+            if tag.contents[0].name == "span" and 'small' in tag.contents[0].get('class', []):
+                # thing = tag.contents[0].get('class')
+                # print(tag.contents[0].get('class'))
+                pass
     # Process small class spans J<span class="small">ESUS.</span>
-    for i in tag.find_all("span", class_="small"):
-        if i.string is None:
-            print("hi")
-            continue
-        i.string = i.string.lower()
+    else:
+        for i in tag.find_all("span", class_="small"):
+            if i.string is None:
+                print("hi")
+                continue
+            i.string = i.string.lower()
 
     # Process odd spaces
     text = spaces_regex.sub(" ", tag.get_text())
-
+    # and ellipses
+    text = ellipsis.sub(" … ", text)
+    text = ellipsis_start.sub("… ", text)
+    text = ellipsis_end.sub(" …", text)
+    # All useful NSBP markers have been fixed, remove the rest
+    text = nbsp.sub("", text)
     return text
-
-
-def remove_spaces(string):
-    return
 
 
 def extract(file):
@@ -111,9 +125,7 @@ def extract(file):
         # for i in verses:
         #     print(i)
         # verses = []
-        with open("output.md", "w") as f:
-            f.write("\n".join(verses))
-
+        return verses
 
 def parse_outline_section(outline, verses, new_verse):
     # Process the main content section in the page
@@ -152,10 +164,11 @@ def parse_outline_section(outline, verses, new_verse):
                     if len(last_type) > 0:
                         if last_type[len(last_type) - 1] == "quote":
                             template = ">\n>{}\n"
+                        # If it was a quote broken by cross reference, append it
                         elif len(last_type) > 1:
                             if last_type[len(last_type) - 1] == "cross reference" \
                                     and last_type[len(last_type) - 2] == "quote":
-                                template = ">\n>{}\n"
+                                template = ">{}\n"
                     append = True
                     # One quote appeared after a header, go figure
                     if last_type:
@@ -176,10 +189,9 @@ def parse_outline_section(outline, verses, new_verse):
                         last_type.append("text")
                 else:
                     last_type.append("text")
-                new = child
 
             # print(child)
-            text = process_text(new, child)
+            text = process_text(child)
             print(text)
             if append:
                 verses[len(verses) - 1] += template.format(text)
@@ -187,17 +199,17 @@ def parse_outline_section(outline, verses, new_verse):
                 new_verse += template.format(text)
         # Subsection header
         elif child.name == 'div' and 'eventsection' in child.get('class', []) and INCLUDE_HEADERS:
-            new_verse += "#### {}\n".format(process_text(child, child))
+            new_verse += "#### {}\n".format(process_text(child))
             last_type.append("header")
         # Sub-subsection header
         elif child.name == 'div' and 'eventsection0' in child.get('class', []) and INCLUDE_HEADERS:
-            new_verse += "##### {}\n".format(process_text(child, child))
+            new_verse += "##### {}\n".format(process_text(child))
             last_type.append("header")
         # Verse
         elif child.name == 'div' and 'event' in child.get('class', []):
             # If this verse lacks a number and follows a cross-reference, we'll append it
             append = child.contents[0].name != 'strong' and last_type[len(last_type) - 1] == "cross reference"
-            new = process_text(child, child, verse=True, footnotes=False)
+            new = process_text(child, verse=True, footnotes=False)
             if append:
                 verses[len(verses) - 1] += " {}\n".format(new)
             else:
@@ -213,7 +225,7 @@ def parse_outline_section(outline, verses, new_verse):
         elif child.name == 'div' and 'event01' in child.get('class', []):
             # If this verse lacks a number and follows a cross-reference, we'll append it
             append = child.contents[0].name != 'strong' and last_type[len(last_type) - 1] == "cross reference"
-            new = process_text(child, child, verse=True, footnotes=False)
+            new = process_text(child, verse=True, footnotes=False)
             if append:
                 verses[len(verses) - 1] += " {}\n".format(new)
             else:
@@ -226,7 +238,7 @@ def parse_outline_section(outline, verses, new_verse):
             last_type.append("cross reference")
         # Paragraph headers
         elif child.name == 'div' and 'event_big' in child.get('class', []):
-            new_verse += "### {}\n".format(process_text(child, child))
+            new_verse += "### {}\n".format(process_text(child))
             last_type.append("header")
 
         if len(last_type) > 5:
@@ -234,9 +246,20 @@ def parse_outline_section(outline, verses, new_verse):
 
     return new_verse
 
+
+def export(verses, json_mode=True):
+    if json_mode:
+        with open("catechism.json", "w") as f:
+            json.dump(verses, f)
+    else:
+        with open("catechism.md", "w") as f:
+            f.write("\n".join(verses))
+
+
 if __name__ == '__main__':
     args = argparse.parse_args()
-    extract(args.epub)
+    verses = extract(args.epub)
+    export(verses)
 
 
 
