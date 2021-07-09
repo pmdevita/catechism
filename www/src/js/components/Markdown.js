@@ -235,6 +235,12 @@ class Markdown extends Component {
 
     processMarkdown(markdownString) {
         // console.log("hello", markdownString);
+        if (markdownString == undefined) {
+            return null;
+        }
+        if (markdownString.length == 0) {
+            return null;
+        }
         let lines = markdownString.split("\n");
         let final = [];
         let group = new GroupManager(); // We group related lines together, like lists or paragraphs
@@ -316,10 +322,12 @@ class Markdown extends Component {
         return final;
     }
 
-    render() {
+    render(props, state, context) {
+        console.log(props.text);
         return (
             <div className={"prose"}>
-                {this.processMarkdown(markdownTest)}
+                {this.processMarkdown(props.text)}
+                {/*{this.processMarkdown(markdownTest)}*/}
                 {/*{this.processMarkdown("**Note:** This document is itself written using Markdown; you\n can [see the source for it by adding '.text' to the URL](/projects/markdown/syntax.text).\n")}*/}
             </div>
         );
