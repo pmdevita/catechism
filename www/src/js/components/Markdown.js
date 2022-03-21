@@ -26,6 +26,9 @@ const MarkdownConsts = {
 
 const LEVEL_TYPES = new Set([MarkdownConsts.LIST, MarkdownConsts.ORDERED_LIST, MarkdownConsts.QUOTE]);
 
+// Markdown types that should not be grouped if the same type is separated by full line break /n/n
+const LINE_BREAK_TYPES = new Set([MarkdownConsts.PARAGRAPH, MarkdownConsts.QUOTE, MarkdownConsts.HEADER])
+
 function Header(props) {
     return h("h" + props.level.toString(), null, <Text>{props.children}</Text>);
 }
@@ -41,7 +44,7 @@ function Emphasis(props) {
 
 function replaceTextMarkup(list, regex, func) {
     // Go backwards to avoid index offset problems
-    for (let i=list.length - 1;i>=0;i--) {
+    for (let i=list.length - 1; i>=0; i--) {
         if (typeof list[i] != 'string') {
             continue;
         }
@@ -73,7 +76,7 @@ function Text(props) {
 }
 
 function List(props) {
-    return h((props.ordered ? "ol" : "ul"), {}, props.list.map((data) => {
+    return h((props.ordered ? "ol" : "ul"), {"start": props.start}, props.list.map((data) => {
         if (typeof data === 'object') {
             return <List ordered={data.ordered} list={data.list}/>;
         } else {
@@ -187,6 +190,21 @@ class Markdown extends Component {
                             break;
                         }
                     }
+                    break;
+                case MarkdownConsts.PARAGRAPH:
+                    console.log("hi", group.groupStack);
+                    // If this isn't the first group
+                    if (i !== 0) {
+                        // Check if the previous block wasn't in the line break types
+                        if (!(group.groupStack[i - 1].type in LINE_BREAK_TYPES)) {
+                            // Then merge it with the previous type
+                            // Merge the paragraph text into the previous tag's last line
+                            group.groupStack[i - 1].list[group.groupStack[i - 1].list.length - 1] = group.groupStack[i - 1].list[group.groupStack[i - 1].list.length - 1] + " " + group.groupStack[i].list.join(" ");
+                            // Delete this group
+                            group.groupStack.splice(i, 1)
+                        }
+                    }
+                    break;
             }
         }
         // Now merge neighboring list components
@@ -218,7 +236,7 @@ class Markdown extends Component {
                 case MarkdownConsts.LIST:
                 case MarkdownConsts.ORDERED_LIST:
                     final.push(<List ordered={finishedGroup.type === MarkdownConsts.ORDERED_LIST}
-                                         list={finishedGroup.list}/>);
+                                         list={finishedGroup.list} start={finishedGroup.start}/>);
                     break;
                 case MarkdownConsts.PARAGRAPH:
                     final.push(<Paragraph list={finishedGroup.list}/>);
@@ -247,7 +265,7 @@ class Markdown extends Component {
         let type = null;
         let result = null;
         let indent = 0;
-        // let lastLineBreak = false; // If the last line was a break, then if types match we have to force them apart
+        let lastLineBreak = false; // If the last line was a break, then if types match we have to force them apart
         let line;
         for (let i=0; i<lines.length; i++) {
             line = lines[i]; // Don't trim, we need indent on left and potentially, continue line >  < on right
@@ -305,14 +323,24 @@ class Markdown extends Component {
             }
             // If this line isn't to join the current group, complete it
             // If this line was a line break, make the group completed
-            if (group.isNotLastType(type) || type === MarkdownConsts.BREAK) {
-                this.processGroup(final, group);
+            // if (group.isNotLastType(type) || type === MarkdownConsts.BREAK) {
+            //     this.processGroup(final, group);
+            // }
+            // If the last token was a break,
+            if (lastLineBreak) {
+                // and the last type was a specific type
+                if (group.lastType() in LINE_BREAK_TYPES) {
+                    // Process and end this group
+                    this.processGroup(final, group)
+                }
             }
+
             if (result != null) {
                 final.push(result);
             } else {
                 group.doAdd();
             }
+            lastLineBreak = type === MarkdownConsts.BREAK;
         }
         this.processGroup(final, group);
         // while (group.length() > 0) {
@@ -328,7 +356,7 @@ class Markdown extends Component {
             <div className={"prose"}>
                 {this.processMarkdown(props.text)}
                 {/*{this.processMarkdown(markdownTest)}*/}
-                {/*{this.processMarkdown("**Note:** This document is itself written using Markdown; you\n can [see the source for it by adding '.text' to the URL](/projects/markdown/syntax.text).\n")}*/}
+                {/*{this.processMarkdown("1. asdf\n\n2. hi there\nhow are you?")}*/}
             </div>
         );
     }
