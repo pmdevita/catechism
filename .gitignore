@@ -111,3 +111,12 @@ config.ini
 .DS_Store
 *.epub
 *.json
+
+/build
+/.svelte-kit
+/package
+.env.*
+!.env.example
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
