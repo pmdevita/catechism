@@ -109,3 +109,5 @@ node_modules
 config.ini
 
 .DS_Store
+*.epub
+*.json
